@@ -28,7 +28,7 @@ public class Produto : IValidatableObject
     [StringLength(300)]
     public string? ImagemUrl { get; set; }
 
-
+    [Required]
     public float Estoque { get; set; }
     public DateTime DataCadastro { get; set; }
     public int CategoriaId { get; set; }

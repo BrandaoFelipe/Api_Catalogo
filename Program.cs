@@ -1,4 +1,5 @@
 using APICatalogo.Context;
+using APICatalogo.Extensions;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 
@@ -29,6 +30,7 @@ internal class Program
         {
             app.UseSwagger();
             app.UseSwaggerUI();
+            app.ConfigureExceptionHandler();
         }
 
         app.UseHttpsRedirection();
