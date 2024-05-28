@@ -16,6 +16,7 @@ namespace APICatalogo.Controllers
         {
             _context = context;
         }
+
         [HttpGet("produtos")]
         public ActionResult<IEnumerable<Categoria>> GetCategoriasProdutos()
         {
@@ -26,9 +27,7 @@ namespace APICatalogo.Controllers
             catch (Exception)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, "An error has occurred!");
-            }
-            
-            
+            }           
         }
 
         [HttpGet]

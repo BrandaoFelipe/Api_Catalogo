@@ -6,23 +6,39 @@ using Microsoft.EntityFrameworkCore;
 
 namespace APICatalogo.Controllers
 {
-    [Route("[controller]")]
+    [Route("[controller]")] //Cria a rota com o nome do controlador (/Produtos)
     [ApiController]
     public class ProdutosController : ControllerBase
     {
         private readonly AppDbContext _context;
 
-        public ProdutosController(AppDbContext context)
+        public ProdutosController(AppDbContext context) //Injeção de dependência da classe AppDbContext para o controller
         {
             _context = context;
         }
 
-        [HttpGet]
-        public ActionResult<IEnumerable<Produto>> Get()
+        //[HttpGet("/primeiro")] // Ignora "/produtos" e utiliza apenas o especificado
+        [HttpGet("{valor:alpha}")] //[HttpGet("{valor:alpha:lenght(5)}")]<minimo - [HttpGet("{valor:alpha:maxlenght(5)}")]
+        public async Task <ActionResult<Produto>> Get2Async() //EndPoints
         {
             try
             {
-                var produtos = _context.Produtos.AsNoTracking().ToList();
+                return await _context.Produtos.FirstOrDefaultAsync();
+            }
+            catch (Exception)
+            {
+
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error has occurred!");
+            }
+        }
+
+        // /Produtos
+        [HttpGet]       
+        public async Task<ActionResult<IEnumerable<Produto>>> GetAsync() //EndPoints
+        {
+            try
+            {
+                var produtos = await _context.Produtos.AsNoTracking().ToListAsync();
                 if (produtos is null)
                 {
                     return NotFound("Produto não encontrado");
@@ -37,7 +53,9 @@ namespace APICatalogo.Controllers
             }
         }
 
-        [HttpGet("{id:int}", Name = "ObterProduto")]
+        //Produtos/id
+        [HttpGet("{id:int:min(1)}", Name = "ObterProduto")] //restrição de rota (id:int:min(n) adiciona uma restrição
+                                                            //para a requisição não chegar no metodo action
         public ActionResult<Produto> Get(int id)
         {
             try
@@ -78,7 +96,7 @@ namespace APICatalogo.Controllers
             }
         }
 
-        [HttpPut ("{id:int}")] //Modifica o item
+        [HttpPut ("{id:int}")] //Modifica o item //Route que utiliza o Id no url
         public ActionResult Put(int id, Produto produto)
         {
             try
