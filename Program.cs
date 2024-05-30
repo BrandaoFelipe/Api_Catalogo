@@ -1,5 +1,6 @@
 using APICatalogo.Context;
 using APICatalogo.Extensions;
+using APICatalogo.Filters;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 
@@ -10,8 +11,12 @@ internal class Program
         var builder = WebApplication.CreateBuilder(args);
 
         // Add services to the container.
-
-        builder.Services.AddControllers().AddJsonOptions(options =>
+        
+        builder.Services.AddControllers(options =>
+        {
+            options.Filters.Add(typeof(ApiExceptionFilter));
+        })
+            .AddJsonOptions(options =>
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         builder.Services.AddEndpointsApiExplorer();
@@ -21,6 +26,8 @@ internal class Program
         builder.Services.AddDbContext<AppDbContext>(options =>
             options.UseMySql(mySqlConnection, 
                 ServerVersion.AutoDetect(mySqlConnection)));
+
+        
 
 
         var app = builder.Build();
