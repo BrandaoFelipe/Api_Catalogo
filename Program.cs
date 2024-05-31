@@ -1,6 +1,7 @@
 using APICatalogo.Context;
 using APICatalogo.Extensions;
 using APICatalogo.Filters;
+using APICatalogo.Repositories;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json.Serialization;
 
@@ -18,16 +19,17 @@ internal class Program
         })
             .AddJsonOptions(options =>
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
-        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+     
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
         
-        string? mySqlConnection = builder.Configuration.GetConnectionString("DefaultConnection");
+        string? mySqlConnection = builder.Configuration.GetConnectionString("DefaultConnection"); //String de conexão com o MySQL
         builder.Services.AddDbContext<AppDbContext>(options =>
             options.UseMySql(mySqlConnection, 
                 ServerVersion.AutoDetect(mySqlConnection)));
 
-        
+        builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
+        builder.Services.AddScoped<IProdutoRepository, ProdutoRepository>();
 
 
         var app = builder.Build();

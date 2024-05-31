@@ -10,7 +10,7 @@ namespace APICatalogo.Context
 
         }
 
-        public DbSet<Categoria>? Categorias { get; set; }
+        public DbSet<Categoria>? Categorias { get; set; } // Implementação das tabelas do banco de dados
         public DbSet<Produto>? Produtos { get; set; }
     }
 }
