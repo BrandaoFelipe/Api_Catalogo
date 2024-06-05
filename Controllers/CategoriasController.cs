@@ -2,6 +2,7 @@
 using APICatalogo.Models;
 using APICatalogo.Repositories;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
@@ -12,45 +13,51 @@ namespace APICatalogo.Controllers
     [ApiController]
     public class CategoriasController : ControllerBase
     {
-        private readonly ICategoriaRepository _repository;
-        public CategoriasController(ICategoriaRepository repository)
+        private readonly IRepository<Categoria> _repository;
+        public CategoriasController(IRepository<Categoria> repository)
         {
             _repository = repository;
         }
 
         [HttpGet]
-        public ActionResult<IEnumerable<Categoria>> Get() //Usando o ActionResult posso retornar código http também
+        public ActionResult<IEnumerable<Categoria>> Get() 
         {
-            var categorias = _repository.GetCategorias();
-            return Ok(categorias); //cria um OkObjectResult objeto que produz uma resposta StatusCode.200OK
+          var categoria = _repository.GetAll();
+            return Ok(categoria);
         }
-
         
         [HttpGet("{id:int}", Name = "ObterCategoria")]
         public ActionResult<Categoria> Get(int id)
         {
-            var categoria = _repository.GetCategoria(id);
+            var categoria = _repository.Get(c  => c.CategoriaId == id);
             if(categoria is null)
             {
-                return NotFound("Categoria not found");
+                return NotFound($"Id {id} não encontrado");
             }
+
             return Ok(categoria);
         }
 
         [HttpPost]
         public ActionResult<Categoria> Post(Categoria categoria)
-        {
-            _repository.Create(categoria);
-            return new CreatedAtRouteResult("Obter categoria", new{id = categoria.CategoriaId}, categoria);
+        {            
+            if (categoria is null)
+            {
+                return BadRequest("Dados inválidos");
+            }
+            var postCategoria = _repository.Create(categoria);
+
+            return new CreatedAtRouteResult("Obter categoria", new { id = postCategoria.CategoriaId }, postCategoria);
         }
 
         [HttpPut("{id:int}")]
         public ActionResult Put(int id, Categoria categoria)
-        {
-            
+        {   //Para atualizar preciso comparar o id que eu informar com o id
+            //da categoria, pra ver se são iguais, se não forem os dados serão inválidos
+            //em seguida utilizamos o método de update e retornamos um codigo 200.
             if(id != categoria.CategoriaId)
             {
-                return BadRequest("Invalid entry");
+                return BadRequest("Dados inválidos");
             }
             _repository.Update(categoria);
             return Ok(categoria);
@@ -59,13 +66,12 @@ namespace APICatalogo.Controllers
         [HttpDelete("{id:int}")]
         public ActionResult Delete(int id)
         {
-            var categoriaDelete = _repository.GetCategoria(id);
-            if(categoriaDelete is null)
+            var categoria = _repository.Get(c => c.CategoriaId == id );
+            if(categoria is null)
             {
-                return NotFound($"Categoria com id {id} não encontrada");
+                return NotFound($"Id {id} não encontrado");
             }
-
-            var categoria = _repository.Delete(id);
+            categoria = _repository.Delete(categoria);
             return Ok(categoria);
         }
 

@@ -9,59 +9,71 @@ namespace APICatalogo.Controllers
     public class ProdutosController : ControllerBase
     {
         private readonly IProdutoRepository _repository;
-
-        public ProdutosController(IProdutoRepository repository) 
+        
+        public ProdutosController(IProdutoRepository repository)
         {
-            _repository = repository;
+            _repository = repository;                        
+        }
+
+        [HttpGet("produtos/{id}")]
+        public ActionResult<IEnumerable<Produto>> GetProdutosPorCategoria(int id)
+        {
+            var produto = _repository.GetProdutoPorCategoria(id);
+            if(produto is null)
+            {
+                return NotFound($"Id {id} não encontrado");
+            }
+            return Ok(produto);
         }
 
         [HttpGet]
         public ActionResult<IEnumerable<Produto>> Get()
         {
-            var produto = _repository.GetProdutos();
-            
-            return Ok(produto);
+           var produtos = _repository.GetAll();
+            return Ok(produtos);
         }
      
         [HttpGet("{id:int:min(1)}", Name = "ObterProduto")] 
         public ActionResult<Produto> Get(int id)
         {
-            var produto = _repository.GetProduto(id);
-            if (produto is null)
+            var produto = _repository.Get(p=> p.ProdutoId == id);
+            if(produto is null)
             {
-                return BadRequest($"Id {id} Not found!");
+                return NotFound("Id não encontrado");
             }
-            return produto;
+            return Ok(produto);
         }
         [HttpPost]
         public ActionResult Post(Produto produto)
         {
-            _repository.Create(produto);
-            return new CreatedAtRouteResult("ObterProduto", new { id = produto.ProdutoId }, produto);
+           if(produto is null)
+            {
+                return BadRequest("Dados inválidos");
+            }
+            var postProduto = _repository.Create(produto);
+            return Ok(postProduto);
         }
 
         [HttpPut("{id:int}")] 
         public ActionResult Put(int id, Produto produto)
         {
-            var getProduto = _repository.GetProduto(id);
-            if (getProduto.ProdutoId != id)
+            if(id != produto.ProdutoId)
             {
-                return BadRequest("Id not found!");
+                return BadRequest($"id {id} não encontrado");
             }
-            _repository.Update(produto);
-            return Ok(produto);
+            var alterProd = _repository.Update(produto);
+            return Ok(alterProd);
         }
 
         [HttpDelete("{id:int}")]
         public ActionResult Delete(int id)
         {
-            var produto = _repository.GetProduto(id);
-            if (produto.ProdutoId != id)
+            var produto = _repository.Get(p => p.ProdutoId == id);
+            if(produto is null)
             {
-                BadRequest($"Id{id} not found!");
+                return NotFound("dados inválidos");
             }
-
-            _repository.Delete(id);
+            produto = _repository.Delete(produto);
             return Ok(produto);
         }
     }
