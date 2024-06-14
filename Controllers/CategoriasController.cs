@@ -1,5 +1,6 @@
 ﻿using APICatalogo.Context;
 using APICatalogo.DTO;
+using APICatalogo.DTO.Mappings;
 using APICatalogo.Models;
 using APICatalogo.Repositories;
 using Microsoft.AspNetCore.Http;
@@ -7,6 +8,7 @@ using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+
 
 namespace APICatalogo.Controllers
 {
@@ -29,17 +31,7 @@ namespace APICatalogo.Controllers
                 return NotFound("Não existem dados a serem exibidos!");
             }
 
-            var categoriaDto = new List<CategoriaDTO>();
-            foreach(var categorias in categoria)
-            {
-                var categoriasDto = new CategoriaDTO()
-                {
-                    CategoriaId = categorias.CategoriaId,
-                    Name = categorias.Name,
-                    ImagemUrl = categorias.ImagemUrl
-                };
-                categoriaDto.Add(categoriasDto);
-            }
+            var categoriaDto = categoria.ToCategoriaDTOList();
 
             return Ok(categoriaDto);
         }
@@ -53,14 +45,9 @@ namespace APICatalogo.Controllers
                 return NotFound($"Id {id} não encontrado");
             }
 
-            var categoriaDto = new CategoriaDTO()
-            {
-                CategoriaId = categoria.CategoriaId,
-                Name = categoria.Name,
-                ImagemUrl = categoria.ImagemUrl
-            };
+            var dtoCategoria = categoria.ToCategoriaDTO();
 
-            return Ok(categoriaDto);
+            return Ok(dtoCategoria);
         }
 
         [HttpPost]
@@ -71,24 +58,18 @@ namespace APICatalogo.Controllers
                 return BadRequest("Dados inválidos");
             }
 
-            var categoria = new Categoria()
-            {
-                CategoriaId = categoriaDto.CategoriaId,
-                Name = categoriaDto.Name,
-                ImagemUrl = categoriaDto.ImagemUrl
-            };
+            var categoria = categoriaDto.ToCategoria();
 
-            var postCategoria = _uof.CategoriaRepository.Create(categoria);
+            _uof.CategoriaRepository.Create(categoria);
+            
             _uof.Commit();
 
-            var categoriaDtoNova = new CategoriaDTO()
-            {
-                CategoriaId = categoria.CategoriaId,
-                Name = categoria.Name,
-                ImagemUrl = categoria.ImagemUrl
-            };
+            var categoriaDtoNova = categoria.ToCategoriaDTO();
 
-            return new CreatedAtRouteResult("Obter categoria", new { id = categoriaDtoNova.CategoriaId }, categoriaDtoNova);
+            return Ok(categoriaDtoNova); 
+            // esse método abaixo está retornando um código 500 e mesmo assim está sendo executado.
+            // new CreatedAtRouteResult("Obter categoria", new { id = categoriaDtoNova.CategoriaId }, categoriaDtoNova);
+            
         }
 
         [HttpPut("{id:int}")]
@@ -96,25 +77,19 @@ namespace APICatalogo.Controllers
         {   //Para atualizar preciso comparar o id que eu informar com o id
             //da categoria, pra ver se são iguais, se não forem os dados serão inválidos
             //em seguida utilizamos o método de update e retornamos um codigo 200.
+
             if(id != categoriaDto.CategoriaId)
             {
                 return BadRequest("Dados inválidos");
             }
-            var categoria = new Categoria()
-            {
-                CategoriaId = categoriaDto.CategoriaId,
-                Name = categoriaDto.Name,
-                ImagemUrl = categoriaDto.ImagemUrl
-            };
+            var categoria = categoriaDto.ToCategoria();
 
             _uof.CategoriaRepository.Update(categoria);
+
             _uof.Commit();
-            var categoriaDtoNova = new CategoriaDTO()
-            {
-                CategoriaId = categoria.CategoriaId,
-                Name = categoria.Name,
-                ImagemUrl = categoria.ImagemUrl
-            };
+
+            var categoriaDtoNova = categoria.ToCategoriaDTO();
+
             return Ok(categoriaDtoNova);
         }
 
@@ -122,21 +97,22 @@ namespace APICatalogo.Controllers
         public ActionResult<CategoriaDTO> Delete(int id)
         {
             var categoria = _uof.CategoriaRepository.Get(c => c.CategoriaId == id );
+
             if(categoria is null)
             {
                 return NotFound($"Id {id} não encontrado");
             }
-            categoria = _uof.CategoriaRepository.Delete(categoria);
+
+            _uof.CategoriaRepository.Delete(categoria);
+
             _uof.Commit();
-            var categoriaDtoNova = new CategoriaDTO()
-            {
-                CategoriaId = categoria.CategoriaId,
-                Name = categoria.Name,
-                ImagemUrl = categoria.ImagemUrl
-            };
+
+            var categoriaDtoNova = categoria.ToCategoriaDTO();
+
             return Ok(categoriaDtoNova);
         }
 
-
+         
+          
     }
 }

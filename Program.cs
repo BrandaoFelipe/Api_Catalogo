@@ -1,4 +1,5 @@
 using APICatalogo.Context;
+using APICatalogo.DTO.Mappings;
 using APICatalogo.Extensions;
 using APICatalogo.Filters;
 using APICatalogo.Repositories;
@@ -32,6 +33,7 @@ internal class Program
         builder.Services.AddScoped<IProdutoRepository, ProdutoRepository>();
         builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+        builder.Services.AddAutoMapper(typeof(ProdutoDTOMappingProfile));
 
         var app = builder.Build();
 
