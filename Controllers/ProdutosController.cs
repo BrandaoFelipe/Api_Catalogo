@@ -2,6 +2,7 @@
 using APICatalogo.Models;
 using APICatalogo.Repositories;
 using AutoMapper;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 
 namespace APICatalogo.Controllers
@@ -18,6 +19,42 @@ namespace APICatalogo.Controllers
             _uof = uof;
             _mapper = mapper;
         }
+
+        [HttpPatch("{id}/PartialUpdate")]
+        public ActionResult<ProdutoDTOResponseRequest> Patch(int id, JsonPatchDocument<ProdutoDTOUpdateRequest> patchProdutoDTO)
+        {
+            if(patchProdutoDTO is null || id <= 0)
+            {
+                return BadRequest();
+            }
+
+            var produto = _uof.ProdutoRepository.Get(p => p.ProdutoId == id);
+            if(produto is null)
+            {
+                return NotFound();
+            }
+
+            var produtoUpdateRequest = _mapper.Map<ProdutoDTOUpdateRequest>(produto);
+
+            patchProdutoDTO.ApplyTo(produtoUpdateRequest, ModelState);
+
+            if(!ModelState.IsValid || TryValidateModel(produtoUpdateRequest))
+            {
+                return BadRequest(ModelState);
+            }
+
+            _mapper.Map(produtoUpdateRequest, produto);
+            //Quando você faz "_mapper.Map(produtoUpdateRequest, produto)",
+            //o AutoMapper olha para o tipo de "produto" e o tipo de "produtoUpdateRequest"
+            //e faz uma inferência de que você quer mapear de "produtoUpdateRequest" para "produto".
+
+            _uof.ProdutoRepository.Update(produto);
+
+            _uof.Commit();
+
+            return Ok(_mapper.Map<ProdutoDTOResponseRequest>(produto));
+        }
+
 
         [HttpGet("produtos/{id}")]
         public ActionResult<IEnumerable<ProdutoDTO>> GetProdutosPorCategoria(int id)
