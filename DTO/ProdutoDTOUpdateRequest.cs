@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using APICatalogo.Models;
+using System.ComponentModel.DataAnnotations;
 
 namespace APICatalogo.DTO
 {
@@ -10,11 +11,10 @@ namespace APICatalogo.DTO
 
         public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
         {
-            if (DataCadastro.Date <= DateTime.Now.Date)
+            if (DataCadastro < DateTime.Now.Date)
             {
-                //yield return new ValidationResult("A data deve ser maior ou igual a data atual", new[] {nameof(this.DataCadastro)});
-                yield return new ValidationResult("A data deve ser maior ou igual a data atual");
-            }
+                yield return new ValidationResult("A data deve ser maior que a  atual", [nameof(DataCadastro)]);
+            }           
         }
     }
 }

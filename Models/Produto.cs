@@ -49,6 +49,6 @@ public class Produto : IValidatableObject
         if(Estoque <= 0)
         {
             yield return new ValidationResult("O estoque dee ser maior que zero", [nameof(Estoque)]);
-        }
+        }       
     }
 }

@@ -32,22 +32,23 @@ namespace APICatalogo.Controllers
             if(produto is null)
             {
                 return NotFound();
-            }
+            }           
 
             var produtoUpdateRequest = _mapper.Map<ProdutoDTOUpdateRequest>(produto);
 
             patchProdutoDTO.ApplyTo(produtoUpdateRequest, ModelState);
 
-            if(!ModelState.IsValid || TryValidateModel(produtoUpdateRequest))
+            if (!ModelState.IsValid && TryValidateModel(produtoUpdateRequest))//TryValidateModel não funcionando xD
             {
                 return BadRequest(ModelState);
             }
+            if(produtoUpdateRequest.DataCadastro <= DateTime.Now.Date)
+            {
+                return BadRequest("A data deve ser maior que a atual");
+            }
 
-            _mapper.Map(produtoUpdateRequest, produto);
-            //Quando você faz "_mapper.Map(produtoUpdateRequest, produto)",
-            //o AutoMapper olha para o tipo de "produto" e o tipo de "produtoUpdateRequest"
-            //e faz uma inferência de que você quer mapear de "produtoUpdateRequest" para "produto".
-
+            _mapper.Map(produtoUpdateRequest, produto); //AutoMapper atualiza o "produto" com as atualizações do "produtoUpdateRequest"
+                                                        //sem alterar o mapeamento           
             _uof.ProdutoRepository.Update(produto);
 
             _uof.Commit();
