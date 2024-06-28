@@ -2,7 +2,7 @@
 
 namespace APICatalogo.DTO.Mappings
 {
-    public static class CategoriaDTOMappingExtensions
+    public static class CategoriaDTOManualMapping
     {
         public static CategoriaDTO? ToCategoriaDTO(this Categoria categoria)
         {
@@ -35,7 +35,7 @@ namespace APICatalogo.DTO.Mappings
                 CategoriaId = categoria.CategoriaId,
                 Name = categoria.Name,
                 ImagemUrl = categoria.ImagemUrl
-            }).ToList(); //testar 
+            }).ToList();
         }
     }
 }

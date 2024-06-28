@@ -2,12 +2,15 @@
 using APICatalogo.DTO;
 using APICatalogo.DTO.Mappings;
 using APICatalogo.Models;
+using APICatalogo.Pagination;
 using APICatalogo.Repositories;
+using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Newtonsoft.Json;
 
 
 namespace APICatalogo.Controllers
@@ -17,9 +20,62 @@ namespace APICatalogo.Controllers
     public class CategoriasController : ControllerBase
     {
         private readonly IUnitOfWork _uof;
-        public CategoriasController(IUnitOfWork uof)
+        private readonly IMapper _mapper;
+        public CategoriasController(IUnitOfWork uof, IMapper mapper)
         {
             _uof = uof;
+            _mapper = mapper;
+
+        }
+
+        [HttpGet("pagination")]
+        public ActionResult<IEnumerable<CategoriaDTO>> Get([FromQuery] ProdutosParameters produtoParams)
+        {
+            var categorias = _uof.CategoriaRepository.GetProdutos(produtoParams);           
+            
+            return ObterCategoria(categorias);            
+        }
+
+        [HttpGet("filter/nome/pagination")]
+        public ActionResult<IEnumerable<CategoriaDTO>> GetCategoriasFiltradas([FromQuery] CategoriaFiltroNome categoriaParams)
+        {
+            var categorias = _uof.CategoriaRepository.GetCategoriasFiltroNome(categoriaParams);
+
+            var metadata = new
+            {
+                categorias.TotalCount,
+                categorias.PageSize,
+                categorias.CurrentPage,
+                categorias.TotalPages,
+                categorias.HasNext,
+                categorias.HasPrevious
+            };
+
+            Response.Headers.Append("X-Pagination", JsonConvert.SerializeObject(metadata));
+            
+            var categoriaDto = _mapper.Map<IEnumerable<CategoriaDTO>>(categorias);
+
+            return Ok(categoriaDto);
+
+           
+        }
+
+        private ActionResult<IEnumerable<CategoriaDTO>> ObterCategoria(PagedList<Categoria> categorias)
+        {
+            var metadata = new
+            {
+                categorias.TotalCount,
+                categorias.PageSize,
+                categorias.CurrentPage,
+                categorias.TotalPages,
+                categorias.HasNext,
+                categorias.HasPrevious
+            };
+
+            Response.Headers.Append("X-Pagination", JsonConvert.SerializeObject(metadata));
+            var categoriaDto = _mapper.Map<IEnumerable<CategoriaDTO>>(categorias);
+
+            return Ok(categoriaDto);
         }
 
         [HttpGet]
@@ -31,7 +87,7 @@ namespace APICatalogo.Controllers
                 return NotFound("Não existem dados a serem exibidos!");
             }
 
-            var categoriaDto = categoria.ToCategoriaDTOList();
+            var categoriaDto = _mapper.Map<IEnumerable<CategoriaDTO>>(categoria);
 
             return Ok(categoriaDto);
         }
@@ -45,7 +101,8 @@ namespace APICatalogo.Controllers
                 return NotFound($"Id {id} não encontrado");
             }
 
-            var dtoCategoria = categoria.ToCategoriaDTO();
+            //var dtoCategoria = categoria.ToCategoriaDTO(); manual mapper
+            var dtoCategoria = _mapper.Map<CategoriaDTO>(categoria);
 
             return Ok(dtoCategoria);
         }
@@ -58,14 +115,16 @@ namespace APICatalogo.Controllers
                 return BadRequest("Dados inválidos");
             }
 
-            var categoria = categoriaDto.ToCategoria();
+            //var categoria = categoriaDto.ToCategoria(); manual mapper
+            var categoria = _mapper.Map<Categoria>(categoriaDto);
 
             _uof.CategoriaRepository.Create(categoria);
             
             _uof.Commit();
 
-            var categoriaDtoNova = categoria.ToCategoriaDTO();
-
+            //var categoriaDtoNova = categoria.ToCategoriaDTO(); manual mapper
+            var categoriaDtoNova = _mapper.Map<CategoriaDTO>(categoria);
+            
             return Ok(categoriaDtoNova); 
             // esse método abaixo está retornando um código 500 e mesmo assim está sendo executado.
             // new CreatedAtRouteResult("Obter categoria", new { id = categoriaDtoNova.CategoriaId }, categoriaDtoNova);
@@ -82,13 +141,14 @@ namespace APICatalogo.Controllers
             {
                 return BadRequest("Dados inválidos");
             }
-            var categoria = categoriaDto.ToCategoria();
+            
+            var categoria = _mapper.Map<Categoria>(categoriaDto);
 
             _uof.CategoriaRepository.Update(categoria);
 
             _uof.Commit();
 
-            var categoriaDtoNova = categoria.ToCategoriaDTO();
+            var categoriaDtoNova = _mapper.Map<CategoriaDTO>(categoria);
 
             return Ok(categoriaDtoNova);
         }
@@ -107,7 +167,7 @@ namespace APICatalogo.Controllers
 
             _uof.Commit();
 
-            var categoriaDtoNova = categoria.ToCategoriaDTO();
+            var categoriaDtoNova = _mapper.Map<CategoriaDTO>(categoria);
 
             return Ok(categoriaDtoNova);
         }

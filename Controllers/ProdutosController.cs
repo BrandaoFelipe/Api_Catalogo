@@ -74,22 +74,25 @@ namespace APICatalogo.Controllers
             return Ok(produtoDto);
         }
 
+        [HttpGet("filter/preco/pagination")]
+        public ActionResult<IEnumerable<ProdutoDTO>> GetProdutosFilterPreco([FromQuery] ProdutosFiltroPreco produtosFiltroParam)
+        {
+            var produtos = _uof.ProdutoRepository.GetProdutosFiltroPreco(produtosFiltroParam);
+
+            var produtosDto = _mapper.Map<IEnumerable<ProdutoDTO>>(produtos);
+
+            ObterProdutos(produtos);
+
+            return Ok(produtosDto);
+        }
+
+        
         [HttpGet("pagination")]
         public ActionResult<IEnumerable<ProdutoDTO>> Get([FromQuery] ProdutosParameters produtoParams)
         {
             var produtos = _uof.ProdutoRepository.GetProdutos(produtoParams);
 
-            var metadata = new
-            {
-                produtos.TotalCount,
-                produtos.PageSize,
-                produtos.CurrentPage,
-                produtos.TotalPages,
-                produtos.HasNext,
-                produtos.HasPrevious
-            };
-
-            Response.Headers.Append("X-Pagination", JsonConvert.SerializeObject(metadata));
+            ObterProdutos(produtos);
             
             var produtosDto = _mapper.Map<IEnumerable<ProdutoDTO>>(produtos);
 
@@ -179,5 +182,20 @@ namespace APICatalogo.Controllers
 
             return Ok(produto);
         }
+        private void ObterProdutos(PagedList<Produto> produtos)
+        {
+            var metadata = new
+            {
+                produtos.TotalCount,
+                produtos.PageSize,
+                produtos.CurrentPage,
+                produtos.TotalPages,
+                produtos.HasNext,
+                produtos.HasPrevious
+            };
+
+            Response.Headers.Append("X-Pagination", JsonConvert.SerializeObject(metadata));
+        }
+
     }
 }
