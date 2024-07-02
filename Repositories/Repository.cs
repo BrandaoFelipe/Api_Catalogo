@@ -12,15 +12,15 @@ namespace APICatalogo.Repositories
             _context = context;
         }
 
-        public IEnumerable<T> GetAll()
+        public async Task<IEnumerable<T>> GetAllAsync()
         {
-            return [.. _context.Set<T>().AsNoTracking()]; //Set do Entity framework core é usado para acessar uma coleção ou uma tabela.
+            return await _context.Set<T>().AsNoTracking().ToListAsync(); //Set do Entity framework core é usado para acessar uma coleção ou uma tabela.
                                                           //ASNOTRAKING é usado apenas nos métodos de realizar consulta.
                                                           //método de utilizar TOLIST() [.. ]
         }
-        public T? Get(Expression<Func<T, bool>> predicate)
+        public async Task <T?> GetAsync(Expression<Func<T, bool>> predicate)
         {
-            return _context.Set<T>().AsNoTracking().FirstOrDefault(predicate); 
+            return await _context.Set<T>().AsNoTracking().FirstOrDefaultAsync(predicate); 
         }
         public T Create(T entity)
         {

@@ -2,6 +2,7 @@
 using APICatalogo.Models;
 using APICatalogo.Pagination;
 using Microsoft.EntityFrameworkCore;
+using X.PagedList;
 
 namespace APICatalogo.Repositories
 {
@@ -10,24 +11,30 @@ namespace APICatalogo.Repositories
         public ProdutoRepository(AppDbContext context) : base(context)
         {
         }
-        public IEnumerable<Produto> GetProdutoPorCategoria(int id)
+        public async Task<IEnumerable<Produto>> GetProdutoPorCategoriaAsync(int id)
         {
-           return [..GetAll().Where(c => c.CategoriaId == id)];
+            var produtos = await GetAllAsync();
+
+            var produtosFiltro = produtos.Where(c => c.CategoriaId == id);
+
+            return produtosFiltro;
         }       
 
-        public PagedList<Produto> GetProdutos(ProdutosParameters produtosParams)
+        public async Task<IPagedList<Produto>> GetProdutosAsync(ProdutosParameters produtosParams)
         {
-            var produtos = GetAll().OrderBy(p => p.ProdutoId).AsQueryable();
+            var produtos = await GetAllAsync();
 
-            var produtosOrdenados = PagedList<Produto>.ToPagedList(produtos, produtosParams.PageNumber, produtosParams.PageSize);
+            var produtosOrderBy = produtos.OrderBy(p => p.ProdutoId).AsQueryable();
+
+            var produtosOrdenados = await produtos.ToPagedListAsync(produtosParams.PageNumber, produtosParams.PageSize);
 
             return produtosOrdenados;
 
         }
 
-        public PagedList<Produto> GetProdutosFiltroPreco(ProdutosFiltroPreco produtosFiltroParams)
+        public async Task<IPagedList<Produto>> GetProdutosFiltroPrecoAsync(ProdutosFiltroPreco produtosFiltroParams)
         {
-            var produtos = GetAll().AsQueryable();
+            var produtos = await GetAllAsync();
             
             if(produtosFiltroParams.Preco.HasValue && !string.IsNullOrEmpty(produtosFiltroParams.PrecoCriterio))
             {
@@ -45,7 +52,7 @@ namespace APICatalogo.Repositories
                 }                
             }
 
-            var produtosFiltrados = PagedList<Produto>.ToPagedList(produtos, produtosFiltroParams.PageNumber, produtosFiltroParams.PageSize);
+            var produtosFiltrados = await produtos.ToPagedListAsync(produtosFiltroParams.PageNumber, produtosFiltroParams.PageSize);
 
             return produtosFiltrados;
         }
