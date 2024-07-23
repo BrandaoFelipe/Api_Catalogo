@@ -93,8 +93,19 @@ internal class Program
                 IssuerSigningKey = new SymmetricSecurityKey(
                     Encoding.UTF8.GetBytes(secretKey))
             };
+        }); //FINAL CODIGO DE AUTENTICAÇÃO BEARER
+
+
+        builder.Services.AddAuthorization(options =>
+        {
+            options.AddPolicy("SuperAdminOnly", policy => policy.RequireRole("SuperAdmin").RequireClaim("id", "master"));
+            options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+            options.AddPolicy("UserOnly", policy => policy.RequireRole("User"));
+            options.AddPolicy("ExclusePolicyOnly", policy => policy.RequireAssertion(context => 
+                             context.User.HasClaim(claim => 
+                                                   claim.Type == "id" && claim.Value =="master") || context.User.IsInRole("SuperAdmin")));
         });
-        //FINAL CODIGO DE AUTENTICAÇÃO BEARER
+
 
         builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
         builder.Services.AddScoped<IProdutoRepository, ProdutoRepository>();
@@ -102,7 +113,7 @@ internal class Program
         builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
         builder.Services.AddAutoMapper(typeof(ProdutoDTOMappingProfile));
         builder.Services.AddScoped<ITokenService, TokenService>();
-
+       
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.
