@@ -2,8 +2,14 @@ using APICatalogo.Context;
 using APICatalogo.DTO.Mappings;
 using APICatalogo.Extensions;
 using APICatalogo.Filters;
+using APICatalogo.Models;
 using APICatalogo.Repositories;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using System.Text;
 using System.Text.Json.Serialization;
 
 internal class Program
@@ -20,20 +26,82 @@ internal class Program
         })
             .AddJsonOptions(options =>
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles).AddNewtonsoftJson();
-     
+
         builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
-        
+        builder.Services.AddSwaggerGen(c =>
+        {
+            c.SwaggerDoc("v1", new OpenApiInfo { Title = "apicatalogo", Version = "v1" });
+
+            c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme()
+            {
+                Name = "Authorization",
+                Type = SecuritySchemeType.ApiKey,
+                Scheme = "Bearer",
+                BearerFormat = "JWT",
+                In = ParameterLocation.Header,
+                Description = "Bearer JWT"
+            });
+            c.AddSecurityRequirement(new OpenApiSecurityRequirement
+            {
+                {
+                new OpenApiSecurityScheme
+                {
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
+                },
+                new string[] { }
+                }
+            });
+        });
+
+        builder.Services.AddIdentity<ApplicationUser, IdentityRole>(). //ApplicationUser(que está herdando de IdentityUser) é a classe para representar os usuários,
+                                                                       //IdentityRole classe para as funções relacionado aos perfis
+            AddEntityFrameworkStores<AppDbContext>() //mecanismo para armazenar os dados relacionado a classe de context
+            .AddDefaultTokenProviders(); //provedores de tokens padrão para lidar com as operações de autenticação.
+
         string? mySqlConnection = builder.Configuration.GetConnectionString("DefaultConnection"); //String de conexão com o MySQL
         builder.Services.AddDbContext<AppDbContext>(options =>
-            options.UseMySql(mySqlConnection, 
+            options.UseMySql(mySqlConnection,
                 ServerVersion.AutoDetect(mySqlConnection)));
+
+        //INICIO CÓDIGO DE AUTENTICAÇÃO BEARER
+        var secretKey = builder.Configuration["JWT:SecretKey"]           
+
+                ?? throw new ArgumentException("Invalid ultra secret key!");
+        
+        builder.Services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+
+        }).AddJwtBearer(options =>
+        {
+            options.SaveToken = true;
+            options.RequireHttpsMetadata = false;
+            options.TokenValidationParameters = new TokenValidationParameters()
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ClockSkew = TimeSpan.Zero,
+                ValidAudience = builder.Configuration["JWT:ValidAudience"],
+                ValidIssuer = builder.Configuration["JWT:ValidIssuer"],
+                IssuerSigningKey = new SymmetricSecurityKey(
+                    Encoding.UTF8.GetBytes(secretKey))
+            };
+        });
+        //FINAL CODIGO DE AUTENTICAÇÃO BEARER
 
         builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
         builder.Services.AddScoped<IProdutoRepository, ProdutoRepository>();
         builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
         builder.Services.AddAutoMapper(typeof(ProdutoDTOMappingProfile));
+        builder.Services.AddScoped<ITokenService, TokenService>();
 
         var app = builder.Build();
 
@@ -46,11 +114,9 @@ internal class Program
         }
 
         app.UseHttpsRedirection();
-
+        app.UseAuthentication();
         app.UseAuthorization();
-
         app.MapControllers();
-
         app.Run();
     }
 }
