@@ -19,6 +19,7 @@ namespace APICatalogo.Controllers
 {
     [Route("[controller]")]
     [ApiController]
+    [ApiExplorerSettings(IgnoreApi = false)]
     public class CategoriasController : ControllerBase
     {
         private readonly IUnitOfWork _uof;

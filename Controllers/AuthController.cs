@@ -13,6 +13,7 @@ namespace APICatalogo.Controllers
 {
     [Route("api/[controller]")]
     [ApiController] //aplica comportamentos específicos de uma API. (validação automatica do modelo de entrada, geração de respostas padronizadas etc.)
+    [ApiExplorerSettings(IgnoreApi = false)]
     public class AuthController : ControllerBase
     {
         private readonly ITokenService _tokenService;

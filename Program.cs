@@ -4,6 +4,7 @@ using APICatalogo.Extensions;
 using APICatalogo.Filters;
 using APICatalogo.Models;
 using APICatalogo.Repositories;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -105,7 +106,17 @@ internal class Program
                              context.User.HasClaim(claim => 
                                                    claim.Type == "id" && claim.Value =="master") || context.User.IsInRole("SuperAdmin")));
         });
+        builder.Services.AddApiVersioning(o =>
+        {
+            o.DefaultApiVersion = new ApiVersion(1, 0);
+            o.AssumeDefaultVersionWhenUnspecified = true;
+            o.ReportApiVersions = true;
 
+        }).AddApiExplorer(options =>
+        {
+            options.GroupNameFormat = "'v'VVV" ;
+            options.SubstituteApiVersionInUrl = true;
+        });
 
         builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
         builder.Services.AddScoped<IProdutoRepository, ProdutoRepository>();
