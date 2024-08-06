@@ -2,6 +2,7 @@
 using APICatalogo.Models;
 using APICatalogo.Pagination;
 using APICatalogo.Repositories;
+using Asp.Versioning;
 using AutoMapper;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
@@ -11,9 +12,11 @@ using X.PagedList;
 
 namespace APICatalogo.Controllers
 {
-    [Route("[controller]")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     [ApiController]
     [ApiExplorerSettings(IgnoreApi = false)]
+    [ApiVersion("1.0", Deprecated = false)]
+    [ApiConventionType(typeof(DefaultApiConventions))]
     public class ProdutosController : ControllerBase
     {
         private readonly IUnitOfWork _uof;
@@ -64,8 +67,15 @@ namespace APICatalogo.Controllers
 
         [HttpGet("produtos/{id}")]
         public async Task<ActionResult<IEnumerable<ProdutoDTO>>> GetProdutosPorCategoria(int id)
-        {
+        {         
+
             var produto = await _uof.ProdutoRepository.GetProdutoPorCategoriaAsync(id);
+
+            if (id == null || id <= 0)
+            {
+                return BadRequest("Id inválido!");
+            }
+
             if (produto is null)
             {
                 return NotFound($"Id {id} não encontrado");
@@ -102,23 +112,39 @@ namespace APICatalogo.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ProdutoDTO>>> Get()
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<ActionResult<IEnumerable<ProdutoDTO>>> GetList()
         {
-            var produtos = await _uof.ProdutoRepository.GetAllAsync();
+            try
+            {
+                var produtos = await _uof.ProdutoRepository.GetAllAsync();
+               //throw new Exception();
 
-            if (produtos is null)
+                if (produtos is null)
+                {
+                    return NotFound();
+                }
+
+                var produtosDto = _mapper.Map<IEnumerable<ProdutoDTO>>(produtos);
+
+                return Ok(produtosDto);
+            }
+            catch
             {
                 return BadRequest();
             }
-
-            var produtosDto = _mapper.Map<IEnumerable<ProdutoDTO>>(produtos);
-
-            return Ok(produtosDto);
+           
         }
 
-        [HttpGet("{id:int:min(1)}", Name = "ObterProduto")]
-        public async Task <ActionResult<ProdutoDTO>> Get(int id)
+        [HttpGet("{id:int:min(1)}")]
+        public async Task <ActionResult<ProdutoDTO>> GetProd(int id)
         {
+            if (id == null || id <= 0)
+            {
+                return BadRequest("Id inválido!");
+            }
             var produto = await _uof.ProdutoRepository.GetAsync(p => p.ProdutoId == id);
             if (produto is null)
             {
@@ -130,6 +156,9 @@ namespace APICatalogo.Controllers
             return Ok(produtoDto);
         }
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+
         public async Task<ActionResult<ProdutoDTO>> Post(ProdutoDTO produtoDto)
         {
             if (produtoDto is null)
@@ -145,9 +174,10 @@ namespace APICatalogo.Controllers
 
             var produtoDtoNovo = _mapper.Map<ProdutoDTO>(postProduto);
 
-            return Ok(produtoDtoNovo);
+            return CreatedAtAction("GetProd", new { id = produtoDtoNovo.ProdutoId }, produtoDtoNovo);
         }
-
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [HttpPut("{id:int}")]
         public async Task<ActionResult<ProdutoDTO>> Put(int id, ProdutoDTO produtoDto)
         {
@@ -165,7 +195,8 @@ namespace APICatalogo.Controllers
 
             return Ok(produtoDtoNovo);
         }
-
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [HttpDelete("{id:int}")]
         public async Task<ActionResult<ProdutoDTO>> Delete(int id)
         {

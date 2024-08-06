@@ -1,6 +1,7 @@
 ﻿using APICatalogo.DTO;
 using APICatalogo.Models;
 using APICatalogo.Repositories;
+using Asp.Versioning;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -11,9 +12,11 @@ using System.Security.Claims;
 
 namespace APICatalogo.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     [ApiController] //aplica comportamentos específicos de uma API. (validação automatica do modelo de entrada, geração de respostas padronizadas etc.)
     [ApiExplorerSettings(IgnoreApi = false)]
+    [ApiVersion("1.0", Deprecated = false)]
+    [ApiConventionType(typeof(DefaultApiConventions))]
     public class AuthController : ControllerBase
     {
         private readonly ITokenService _tokenService;

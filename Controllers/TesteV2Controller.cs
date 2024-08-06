@@ -4,9 +4,10 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace APICatalogo.Controllers
 {
-    [Route("api/v{version:ApiVersion}/teste")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     [ApiController]
     [ApiVersion("2.0", Deprecated = false)]
+    [ApiConventionType(typeof(DefaultApiConventions))]
     public class TesteV2Controller : ControllerBase
     {
         [HttpGet]

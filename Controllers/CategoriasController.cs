@@ -4,8 +4,10 @@ using APICatalogo.DTO.Mappings;
 using APICatalogo.Models;
 using APICatalogo.Pagination;
 using APICatalogo.Repositories;
+using Asp.Versioning;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -17,9 +19,13 @@ using X.PagedList;
 
 namespace APICatalogo.Controllers
 {
-    [Route("[controller]")]
+    [EnableCors("_origensComAcessoPermitido")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     [ApiController]
     [ApiExplorerSettings(IgnoreApi = false)]
+    [ApiVersion("1.0", Deprecated = false)]
+    [ApiConventionType(typeof(DefaultApiConventions))]
+
     public class CategoriasController : ControllerBase
     {
         private readonly IUnitOfWork _uof;
@@ -31,7 +37,7 @@ namespace APICatalogo.Controllers
             _mapper = mapper;
 
         }
-
+        
         [HttpGet("pagination")]
         public async Task<ActionResult<IEnumerable<CategoriaDTO>>> Get([FromQuery] ProdutosParameters produtoParams)
         {
@@ -56,7 +62,6 @@ namespace APICatalogo.Controllers
             return Ok(categoriaDto);           
         }
 
-
         [Authorize]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<CategoriaDTO>>> Get() 
@@ -71,9 +76,10 @@ namespace APICatalogo.Controllers
 
             return Ok(categoriaDto);
         }
-        
-        [HttpGet("{id:int}", Name = "ObterCategoria")]
-        public async Task<ActionResult<CategoriaDTO>> Get(int id)
+
+        [DisableCors]
+        [HttpGet("{id:int}")]
+        public async Task<ActionResult<CategoriaDTO>> GetProd(int id)
         {
             var categoria = await _uof.CategoriaRepository.GetAsync(c  => c.CategoriaId == id);
             if(categoria is null)
@@ -105,10 +111,8 @@ namespace APICatalogo.Controllers
             //var categoriaDtoNova = categoria.ToCategoriaDTO(); manual mapper
             var categoriaDtoNova = _mapper.Map<CategoriaDTO>(categoria);
             
-            return Ok(categoriaDtoNova); 
-            // esse método abaixo está retornando um código 500 e mesmo assim está sendo executado.
-            // new CreatedAtRouteResult("Obter categoria", new { id = categoriaDtoNova.CategoriaId }, categoriaDtoNova);
-            
+            return CreatedAtAction("GetProd", new { id = categoriaDtoNova.CategoriaId }, categoriaDtoNova);
+
         }
 
         [HttpPut("{id:int}")]

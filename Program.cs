@@ -28,7 +28,25 @@ internal class Program
             .AddJsonOptions(options =>
         options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles).AddNewtonsoftJson();
 
+        //INICIO CORS
+        var origensComAcessoPermitido = "_origensComAcessoPermitido";
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy(name: origensComAcessoPermitido,
+                policy =>
+                {
+                    //policy.AllowAnyOrigin();
+                    policy.WithOrigins("https://localhost:7016")
+                    .AllowAnyMethod()
+                    .AllowAnyHeader();
+                    //.WithMethods("GET", "POST");
+                });
+        });
+        //FINAL CORS
+
         builder.Services.AddEndpointsApiExplorer();
+        
+        //DOCUMENTAÇÃO
         builder.Services.AddSwaggerGen(c =>
         {
             c.SwaggerDoc("v1", new OpenApiInfo { Title = "apicatalogo", Version = "v1" });
@@ -111,10 +129,13 @@ internal class Program
             o.DefaultApiVersion = new ApiVersion(1, 0);
             o.AssumeDefaultVersionWhenUnspecified = true;
             o.ReportApiVersions = true;
+            o.ApiVersionReader = ApiVersionReader.Combine(new QueryStringApiVersionReader(),
+                                                            new UrlSegmentApiVersionReader());
+            //Quando não explicitado o esquema de utilização, por padrão utiliza-se o QueryString
 
         }).AddApiExplorer(options =>
         {
-            options.GroupNameFormat = "'v'VVV" ;
+            options.GroupNameFormat = "'v'VVV" ; //formata a versão com "'v'major[.minor][-status]"
             options.SubstituteApiVersionInUrl = true;
         });
 
@@ -136,6 +157,9 @@ internal class Program
         }
 
         app.UseHttpsRedirection();
+        app.UseStaticFiles();
+        app.UseRouting();
+        app.UseCors();
         app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
