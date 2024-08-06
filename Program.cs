@@ -3,15 +3,18 @@ using APICatalogo.DTO.Mappings;
 using APICatalogo.Extensions;
 using APICatalogo.Filters;
 using APICatalogo.Models;
+using APICatalogo.RateLimitOptions;
 using APICatalogo.Repositories;
 using Asp.Versioning;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 
 internal class Program
 {
@@ -45,7 +48,7 @@ internal class Program
         //FINAL CORS
 
         builder.Services.AddEndpointsApiExplorer();
-        
+
         //DOCUMENTAÇÃO
         builder.Services.AddSwaggerGen(c =>
         {
@@ -87,10 +90,10 @@ internal class Program
                 ServerVersion.AutoDetect(mySqlConnection)));
 
         //INICIO CÓDIGO DE AUTENTICAÇÃO BEARER
-        var secretKey = builder.Configuration["JWT:SecretKey"]           
+        var secretKey = builder.Configuration["JWT:SecretKey"]
 
                 ?? throw new ArgumentException("Invalid ultra secret key!");
-        
+
         builder.Services.AddAuthentication(options =>
         {
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -120,9 +123,9 @@ internal class Program
             options.AddPolicy("SuperAdminOnly", policy => policy.RequireRole("SuperAdmin").RequireClaim("id", "master"));
             options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
             options.AddPolicy("UserOnly", policy => policy.RequireRole("User"));
-            options.AddPolicy("ExclusePolicyOnly", policy => policy.RequireAssertion(context => 
-                             context.User.HasClaim(claim => 
-                                                   claim.Type == "id" && claim.Value =="master") || context.User.IsInRole("SuperAdmin")));
+            options.AddPolicy("ExclusePolicyOnly", policy => policy.RequireAssertion(context =>
+                             context.User.HasClaim(claim =>
+                                                   claim.Type == "id" && claim.Value == "master") || context.User.IsInRole("SuperAdmin")));
         });
         builder.Services.AddApiVersioning(o =>
         {
@@ -135,9 +138,31 @@ internal class Program
 
         }).AddApiExplorer(options =>
         {
-            options.GroupNameFormat = "'v'VVV" ; //formata a versão com "'v'major[.minor][-status]"
+            options.GroupNameFormat = "'v'VVV"; //formata a versão com "'v'major[.minor][-status]"
             options.SubstituteApiVersionInUrl = true;
         });
+
+        //RateLimiting INICIO
+        var myOptions = new MyRateLimitOptions();
+        builder.Configuration.GetSection(MyRateLimitOptions.MyRateLimit).Bind(myOptions);
+
+
+        builder.Services.AddRateLimiter(rateLimitOptions =>
+        {
+            rateLimitOptions.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            rateLimitOptions.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(httpContext =>
+            RateLimitPartition.GetFixedWindowLimiter(partitionKey: httpContext.User.Identity?.Name ?? httpContext.Request.Headers.Host.ToString(),
+            factory: partition => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = myOptions.AutoReplenishment,
+                PermitLimit = myOptions.PermitLimit,
+                Window = TimeSpan.FromSeconds(myOptions.Window),
+                QueueLimit = myOptions.QueueLimit,
+
+            }));
+
+        });
+        //ratelimiting FINAL
 
         builder.Services.AddScoped<ICategoriaRepository, CategoriaRepository>();
         builder.Services.AddScoped<IProdutoRepository, ProdutoRepository>();
@@ -145,7 +170,7 @@ internal class Program
         builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
         builder.Services.AddAutoMapper(typeof(ProdutoDTOMappingProfile));
         builder.Services.AddScoped<ITokenService, TokenService>();
-       
+
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.
@@ -159,6 +184,7 @@ internal class Program
         app.UseHttpsRedirection();
         app.UseStaticFiles();
         app.UseRouting();
+        app.UseRateLimiter();
         app.UseCors();
         app.UseAuthentication();
         app.UseAuthorization();

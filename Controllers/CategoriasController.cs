@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Newtonsoft.Json;
@@ -25,6 +26,7 @@ namespace APICatalogo.Controllers
     [ApiExplorerSettings(IgnoreApi = false)]
     [ApiVersion("1.0", Deprecated = false)]
     [ApiConventionType(typeof(DefaultApiConventions))]
+    //[EnableRateLimiting ("fixedWindow")]
 
     public class CategoriasController : ControllerBase
     {
@@ -62,7 +64,8 @@ namespace APICatalogo.Controllers
             return Ok(categoriaDto);           
         }
 
-        [Authorize]
+        //[Authorize]
+        //[DisableRateLimiting]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<CategoriaDTO>>> Get() 
         {
